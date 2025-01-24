@@ -1,7 +1,7 @@
 #V1. RSI ниже 30 тогда мы покупаем, если выше 70 тогда продаем.
 #Тейк профит для позиции +0.5% движения цены, стоп лосс 5%
 import os
-
+import time
 import ta
 from tradesimulator import TradeSimulator
 from concurrent.futures import ProcessPoolExecutor
@@ -77,8 +77,9 @@ if __name__ == "__main__":
         for tf in tfs:
             # Параметры для перебора
             ohlc = ta.get_ohlc(coin, tf)
-            filter_ema_range = range(100, 350)
-            slow_ema_range = range(50, 200)
+            start_time = time.time()
+            filter_ema_range = range(100, 101)
+            slow_ema_range = range(50, 52)
             takeProfit_range = np.arange(1.0, 16.0, 0.5)
             stopLoss_range = np.arange(1.0, 16.0, 0.5)
 
@@ -101,3 +102,6 @@ if __name__ == "__main__":
             report_history.extend(results)
             ta.save_sorted_final_report_to_csv(report_history, f'res/v10_{coin}_{tf}.csv')
             print(f'test period: {ohlc[0]["timestamp"]} - {ohlc[-1]["timestamp"]}')
+            end_time = time.time()
+            execution_time = end_time - start_time
+            print(f"Время выполнения: {execution_time} секунд")

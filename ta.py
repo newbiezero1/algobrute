@@ -251,3 +251,23 @@ def save_sorted_final_report_to_csv(reports, file_path):
         for report in sorted_reports:
             # Используем .get для ключей, чтобы не было ошибок, если данных не хватает
             writer.writerow({col: report.get(col, "") for col in column_order})
+
+def calculate_crossover(v_fastEMA, v_slowEMA):
+    bullSignal = []
+    for i in range(len(v_fastEMA)):
+        bullSignal.append(False)
+        if i == 0:
+            continue
+        if v_fastEMA[i - 1] < v_slowEMA[i - 1] and v_fastEMA[i] > v_slowEMA[i]:
+            bullSignal[i] = True
+    return bullSignal
+
+def calculate_crossunder(v_fastEMA, v_slowEMA):
+    bearSignal = []
+    for i in range(len(v_fastEMA)):
+        bearSignal.append(False)
+        if i == 0:
+            continue
+        if v_fastEMA[i - 1] > v_slowEMA[i - 1] and v_fastEMA[i] < v_slowEMA[i]:
+            bearSignal[i] = True
+    return bearSignal

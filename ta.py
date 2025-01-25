@@ -4,6 +4,9 @@ from datetime import datetime
 from tabulate import tabulate
 import csv
 
+def flush_indicator_cache():
+    ema_cache = {}
+
 ema_cache = {}
 def calculate_ema(ohlc, period, name):
     cache_key = f'{name}_{period}'

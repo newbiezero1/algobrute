@@ -4,14 +4,19 @@ from datetime import datetime
 from tabulate import tabulate
 import csv
 
-
-def calculate_ema(ohlc, period):
+ema_cache = {}
+def calculate_ema(ohlc, period, name):
+    cache_key = f'{name}_{period}'
+    if cache_key in ema_cache:
+        return ema_cache[cache_key]
     prices = []
     for line in ohlc:
         prices.append(line["close"])
     prices_series = pd.Series(prices)
     ema = prices_series.ewm(span=period, adjust=False).mean()
-    return ema.tolist()
+    res = ema.tolist()
+    ema_cache[cache_key] = res
+    return res
 
 def calculate_rsi(ohlc, period):
     prices = []

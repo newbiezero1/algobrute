@@ -10,10 +10,10 @@ import numpy as np
 deposit = 10000
 commission = 0.1
 
-def test(ohlc, ifilterEma, islowEma, takeProfit, stopLoss):
+def test(ohlc, ifilterEma, islowEma, takeProfit, stopLoss, name='15'):
     simulator = TradeSimulator(initial_balance=deposit, commission=commission)
-    trendEma = ta.calculate_ema(ohlc, ifilterEma)
-    slowEma = ta.calculate_ema(ohlc, islowEma)
+    trendEma = ta.calculate_ema(ohlc, ifilterEma, name)
+    slowEma = ta.calculate_ema(ohlc, islowEma, name)
     crossover = ta.calculate_crossover(slowEma, trendEma)
     crossunder = ta.calculate_crossunder(slowEma, trendEma)
 
@@ -55,14 +55,14 @@ def test(ohlc, ifilterEma, islowEma, takeProfit, stopLoss):
 # Функция для тестирования
 def run_test(params):
     ohlc, filter_ema, slow_ema, takeProfit, stopLoss = params
-    report = test(ohlc[:-15000], filter_ema, slow_ema, takeProfit, stopLoss)
+    report = test(ohlc[:-15000], filter_ema, slow_ema, takeProfit, stopLoss, '15')
     #print(f'{filter_ema} {slow_ema} {takeProfit} {stopLoss} {report["Net Profit"]}')
     with open('log.txt', "w") as file:
         file.write(f'{filter_ema} {slow_ema} {takeProfit} {stopLoss} {report["Net Profit"]}\n')
     if report['Net Profit'] < 0:
         return {}
-    report30 = test(ohlc[:-30000], filter_ema, slow_ema, takeProfit, stopLoss)
-    report45 = test(ohlc, filter_ema, slow_ema, takeProfit, stopLoss)
+    report30 = test(ohlc[:-30000], filter_ema, slow_ema, takeProfit, stopLoss, '30')
+    report45 = test(ohlc, filter_ema, slow_ema, takeProfit, stopLoss, '45')
     report['Net Profit 30k'] = report30['Net Profit']
     report['Net Profit 45k'] = report45['Net Profit']
     report['params'] = f'{filter_ema} {slow_ema} {takeProfit} {stopLoss}'
@@ -78,8 +78,8 @@ if __name__ == "__main__":
             # Параметры для перебора
             ohlc = ta.get_ohlc(coin, tf)
             start_time = time.time()
-            filter_ema_range = range(100, 101)
-            slow_ema_range = range(50, 52)
+            filter_ema_range = range(150, 350)
+            slow_ema_range = range(50, 150)
             takeProfit_range = np.arange(1.0, 16.0, 0.5)
             stopLoss_range = np.arange(1.0, 16.0, 0.5)
 

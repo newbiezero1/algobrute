@@ -9,7 +9,7 @@ import numpy as np
 deposit = 10000
 commission = 0.1
 
-def test(ohlc, rsi_length, overbuy, oversell, takeProfit, stopLoss, name='15'):
+def test(ohlc, rsi_length, overbuy, oversell, takeProfit, name='15'):
     simulator = TradeSimulator(initial_balance=deposit, commission=commission)
     rsi = ta.calculate_rsi(ohlc, rsi_length)
 
@@ -30,7 +30,7 @@ def test(ohlc, rsi_length, overbuy, oversell, takeProfit, stopLoss, name='15'):
             if simulator.get_current_position()['direction'] is not None:
                 simulator.close_position(index=newBar['timestamp'], close_price=newBar['open'])
             volume = simulator.balance / newBar['open']
-            sl = newBar['open'] * (1 - stopLoss / 100)
+            sl = closedBar['low']
             tp = newBar['open'] * (1 + takeProfit / 100)
             simulator.open_position(direction='long', entry_price=newBar['open'], volume=volume, index=newBar['timestamp'])
             simulator.set_stop_loss_and_take_profit(stop_loss=sl, take_profit=tp)
@@ -39,7 +39,7 @@ def test(ohlc, rsi_length, overbuy, oversell, takeProfit, stopLoss, name='15'):
             if simulator.get_current_position()['direction'] is not None:
                 simulator.close_position(index=newBar['timestamp'], close_price=newBar['open'])
             volume = simulator.balance / newBar['open']
-            sl = newBar['open'] * (1 + stopLoss / 100)
+            sl = closedBar['high']
             tp = newBar['open'] * (1 - takeProfit / 100)
             simulator.open_position(direction='short', entry_price=newBar['open'], volume=volume, index=newBar['timestamp'])
             simulator.set_stop_loss_and_take_profit(stop_loss=sl, take_profit=tp)
@@ -54,17 +54,17 @@ def threaded_run(params):
         return {"error": str(e), "params": params}
 
 def run_test(params):
-    ohlc, rsi_length, overbuy, oversell, takeProfit, stopLoss = params
-    report = test(ohlc[:-15000], rsi_length, overbuy, oversell, takeProfit, stopLoss, '15')
+    ohlc, rsi_length, overbuy, oversell, takeProfit = params
+    report = test(ohlc[:-15000], rsi_length, overbuy, oversell, takeProfit, '15')
     with open('log_v2.txt', "w") as file:
-        file.write(f'{rsi_length} {overbuy} {oversell} {takeProfit} {stopLoss} {report["Net Profit"]}\n')
+        file.write(f'{rsi_length} {overbuy} {oversell} {takeProfit} {report["Net Profit"]}\n')
     if report['Net Profit'] < 0:
         return {}
-    report30 = test(ohlc[:-30000],rsi_length, overbuy, oversell, takeProfit, stopLoss, '30')
-    report45 = test(ohlc, rsi_length, overbuy, oversell, takeProfit, stopLoss, '45')
+    report30 = test(ohlc[:-30000],rsi_length, overbuy, oversell, takeProfit, '30')
+    report45 = test(ohlc, rsi_length, overbuy, oversell, takeProfit, '45')
     report['Net Profit 30k'] = report30['Net Profit']
     report['Net Profit 45k'] = report45['Net Profit']
-    report['params'] = f'{rsi_length} {overbuy} {oversell} {takeProfit} {stopLoss}'
+    report['params'] = f'{rsi_length} {overbuy} {oversell} {takeProfit}'
     return report
 
 def process_batch(batch):
@@ -83,15 +83,13 @@ if __name__ == "__main__":
             overbought_range = range(70, 91)
             oversold_range = range(10, 31)
             takeProfit_range = np.arange(1.0, 16.0, 0.5)
-            stopLoss_range = np.arange(1.0, 16.0, 0.5)
 
             param_combinations = [
-                (ohlc, rsi, overbought, oversold, takeProfit, stopLoss)
+                (ohlc, rsi, overbought, oversold, takeProfit)
                 for rsi in rsi_range
                 for overbought in overbought_range
                 for oversold in oversold_range
                 for takeProfit in takeProfit_range
-                for stopLoss in stopLoss_range
             ]
 
             report_history = []
@@ -107,6 +105,6 @@ if __name__ == "__main__":
             for batch_result in results:
                 report_history.extend(batch_result)
 
-            ta.save_sorted_final_report_to_csv(report_history, f'res/v5_{coin}_{tf}.csv')
+            ta.save_sorted_final_report_to_csv(report_history, f'res/v6_{coin}_{tf}.csv')
             end_time = time.time()
             print(f"Тест завершён за {end_time - start_time} секунд")

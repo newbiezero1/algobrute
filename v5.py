@@ -73,7 +73,7 @@ def process_batch(batch):
         return list(executor.map(threaded_run, batch))
 
 if __name__ == "__main__":
-    coins = ['BTC']
+    coins = ['AVAX', 'DOGE']
     tfs = ['5m', '15m']
     for coin in coins:
         for tf in tfs:

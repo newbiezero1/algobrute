@@ -9,28 +9,31 @@ import numpy as np
 deposit = 10000
 commission = 0.1
 
-def test(ohlc, rsi_length, overbuy, oversell, takeProfit, name='15'):
+def test(ohlc, ifilterEma, ifastEma, islowEma, takeProfit, stopLoss, name='15'):
     simulator = TradeSimulator(initial_balance=deposit, commission=commission)
-    rsi = ta.calculate_rsi(ohlc, rsi_length)
+    trendEma = ta.calculate_ema(ohlc, ifilterEma, name)
+    fastEma = ta.calculate_ema(ohlc, ifastEma, name)
+    slowEma = ta.calculate_ema(ohlc, islowEma, name)
+    crossover = ta.calculate_crossover(fastEma, slowEma)
+    crossunder = ta.calculate_crossunder(fastEma, slowEma)
 
     for i in range(len(ohlc)):
         if i < 1: continue
         closedBar = ohlc[i-1]
         simulator.on_new_candle(index=closedBar['timestamp'], o=closedBar['open'], h=closedBar['high'], l=closedBar['low'], c=closedBar['close'])
-        if i < rsi_length*10:
+        if i < max([ifilterEma, islowEma]):
             continue
 
         newBar = ohlc[i]
-        crossover = ta.calculate_crossover([rsi[i-2], rsi[i-1]], [oversell, oversell])
-        crossunder = ta.calculate_crossunder([rsi[i-2], rsi[i-1]], [overbuy, overbuy])
-        longCondition = crossover[-1]
-        shortCondition = crossunder[-1]
+
+        longCondition = crossover[i-1] and newBar['open'] > trendEma[i-1] and slowEma[i-1] > trendEma[i-1]
+        shortCondition = crossunder[i-1] and newBar['open'] < trendEma[i-1] and slowEma[i-1] < trendEma[i-1]
 
         if longCondition and simulator.get_current_position()['direction'] != 'long':
             if simulator.get_current_position()['direction'] is not None:
                 simulator.close_position(index=newBar['timestamp'], close_price=newBar['open'])
             volume = simulator.balance / newBar['open']
-            sl = closedBar['low']
+            sl = newBar['open'] * (1 - stopLoss / 100)
             tp = newBar['open'] * (1 + takeProfit / 100)
             simulator.open_position(direction='long', entry_price=newBar['open'], volume=volume, index=newBar['timestamp'])
             simulator.set_stop_loss_and_take_profit(stop_loss=sl, take_profit=tp)
@@ -39,7 +42,7 @@ def test(ohlc, rsi_length, overbuy, oversell, takeProfit, name='15'):
             if simulator.get_current_position()['direction'] is not None:
                 simulator.close_position(index=newBar['timestamp'], close_price=newBar['open'])
             volume = simulator.balance / newBar['open']
-            sl = closedBar['high']
+            sl = newBar['open'] * (1 + stopLoss / 100)
             tp = newBar['open'] * (1 - takeProfit / 100)
             simulator.open_position(direction='short', entry_price=newBar['open'], volume=volume, index=newBar['timestamp'])
             simulator.set_stop_loss_and_take_profit(stop_loss=sl, take_profit=tp)
@@ -54,17 +57,17 @@ def threaded_run(params):
         return {"error": str(e), "params": params}
 
 def run_test(params):
-    ohlc, rsi_length, overbuy, oversell, takeProfit = params
-    report = test(ohlc[:-15000], rsi_length, overbuy, oversell, takeProfit, '15')
-    with open('log_v2.txt', "w") as file:
-        file.write(f'{rsi_length} {overbuy} {oversell} {takeProfit} {report["Net Profit"]}\n')
+    ohlc, filter_ema,fast_ema, slow_ema, takeProfit, stopLoss = params
+    report = test(ohlc[:-15000], filter_ema, fast_ema, slow_ema, takeProfit, stopLoss, '15')
+    with open('log.txt', "w") as file:
+        file.write(f'{filter_ema} {fast_ema} {slow_ema} {takeProfit} {stopLoss} {report["Net Profit"]}\n')
     if report['Net Profit'] < 0:
         return {}
-    report30 = test(ohlc[:-30000],rsi_length, overbuy, oversell, takeProfit, '30')
-    report45 = test(ohlc, rsi_length, overbuy, oversell, takeProfit, '45')
+    report30 = test(ohlc[:-30000], filter_ema, fast_ema, slow_ema, takeProfit, stopLoss, '30')
+    report45 = test(ohlc, filter_ema, fast_ema, slow_ema, takeProfit, stopLoss, '45')
     report['Net Profit 30k'] = report30['Net Profit']
     report['Net Profit 45k'] = report45['Net Profit']
-    report['params'] = f'{rsi_length} {overbuy} {oversell} {takeProfit}'
+    report['params'] = f'{filter_ema} {fast_ema} {slow_ema} {takeProfit} {stopLoss}'
     return report
 
 def process_batch(batch):
@@ -73,23 +76,25 @@ def process_batch(batch):
         return list(executor.map(threaded_run, batch))
 
 if __name__ == "__main__":
-    coins = ['AVAX', 'ETC', 'ETH', 'SOL', 'LINK']
-    tfs = ['5m', '15m']
+    coins = ['BTC']
+    tfs = ['5m']
     for coin in coins:
         for tf in tfs:
             ohlc = ta.get_ohlc(coin, tf)
             start_time = time.time()
-            rsi_range = range(14, 28)
-            overbought_range = range(70, 91)
-            oversold_range = range(10, 31)
-            takeProfit_range = np.arange(1.0, 16.0, 0.5)
+            filter_ema_range = range(150, 260)
+            fast_ema_range = range(5, 25)
+            slow_ema_range = range(20, 50)
+            takeProfit_range = np.arange(1.0, 11.0, 0.5)
+            stopLoss_range = np.arange(1.0, 11.0, 0.5)
 
             param_combinations = [
-                (ohlc, rsi, overbought, oversold, takeProfit)
-                for rsi in rsi_range
-                for overbought in overbought_range
-                for oversold in oversold_range
+                (ohlc, filter_ema, fast_ema, slow_ema, takeProfit, stopLoss)
+                for filter_ema in filter_ema_range
+                for fast_ema in fast_ema_range
+                for slow_ema in slow_ema_range
                 for takeProfit in takeProfit_range
+                for stopLoss in stopLoss_range
             ]
 
             report_history = []
@@ -105,6 +110,6 @@ if __name__ == "__main__":
             for batch_result in results:
                 report_history.extend(batch_result)
 
-            ta.save_sorted_final_report_to_csv(report_history, f'res/v6_{coin}_{tf}.csv')
+            ta.save_sorted_final_report_to_csv(report_history, f'res/v5_{coin}_{tf}.csv')
             end_time = time.time()
             print(f"Тест завершён за {end_time - start_time} секунд")

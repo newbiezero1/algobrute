@@ -1,3 +1,5 @@
+from statistics import mean, stdev
+
 class TradeSimulator:
     def __init__(self, initial_balance: float = 10000.0, commission: float = 0.035):
         """
@@ -16,7 +18,7 @@ class TradeSimulator:
             'stop_loss': None,
             'take_profit': None,
             'volume': 0.0,
-            'entry_index': None  # Индекс свечи (или время), когда открыли позицию
+            'entry_index': None
         }
 
         # История сделок
@@ -24,6 +26,7 @@ class TradeSimulator:
 
         # Для расчёта максимальной просадки
         self.equity_curve = [self.balance]  # Будем хранить баланс/эквити после прихода каждой новой свечи
+
 
     def set_basic_settings(self, initial_balance: float, commission: float):
         """
@@ -211,9 +214,11 @@ class TradeSimulator:
          - Net Profit
          - Total Trades
          - Percent Profitable
-         - Profit Factor (отношение суммарной прибыли к суммарному убытку)
+         - Profit Factor
          - Max Drawdown
          - Average Trade (в процентах от начального депозита)
+         - Sharpe Ratio
+         - Sortino Ratio
         """
         total_trades = len(self.trades_history)
         if total_trades == 0:
@@ -223,7 +228,9 @@ class TradeSimulator:
                 'Percent Profitable': 0.0,
                 'Profit Factor': 0.0,
                 'Max Drawdown': 0.0,
-                'Avg Trade (%)': 0.0
+                'Avg Trade (%)': 0.0,
+                'Sharpe Ratio': 0.0,
+                'Sortino Ratio': 0.0
             }
 
         net_profit = self.balance - self.initial_balance
@@ -236,14 +243,12 @@ class TradeSimulator:
         gross_loss = abs(sum(losses))
 
         # Процент прибыльных сделок
-        percent_profitable = (len(wins) / total_trades) * 100.0 if total_trades else 0.0
+        percent_profitable = (len(wins) / total_trades) * 100.0
 
         # Profit factor
         profit_factor = (gross_profit / gross_loss) if gross_loss != 0 else float('inf')
 
         # Максимальная просадка
-        # Для расчёта используем equity_curve:
-        #   max_dd = максимальное (предыдущее max_equity - текущее equity)
         max_equity = self.equity_curve[0]
         max_drawdown_abs = 0.0
 
@@ -255,9 +260,48 @@ class TradeSimulator:
                 max_drawdown_abs = drawdown
 
         max_drawdown_percent = (max_drawdown_abs / self.initial_balance) * 100.0
-
         # Средняя прибыль/убыток на сделку в процентах от начального депозита
         avg_trade_percent = (net_profit / self.initial_balance) * 100.0 / total_trades
+
+        # ==============================
+        # Расчёт Sharpe Ratio и Sortino Ratio
+        # ==============================
+
+        # Считаем доходность на сделку как profit / initial_balance
+        trade_returns = [t['profit'] / self.initial_balance for t in self.trades_history]
+        average_return = sum(trade_returns) / total_trades
+
+        # Стандартное отклонение «общей» доходности
+        # (для Sharpe Ratio)
+        if total_trades > 1:
+            std_dev_returns = stdev(trade_returns)
+        else:
+            # При 1-й сделке стандартное отклонение = 0 по определению
+            std_dev_returns = 0
+
+        # Sharpe Ratio (упрощённый вариант, без учёта безрисковой ставки)
+        if std_dev_returns != 0:
+            sharpe_ratio = average_return / std_dev_returns
+        else:
+            # Если разброс доходности нулевой (все сделки с одинаковым профитом),
+            # то Sharpe можно считать равным 0 или очень большим числом.
+            # Обычно делают 0, чтобы не искажать статистику.
+            sharpe_ratio = 0.0
+
+        # Для Sortino Ratio считаем стандартное отклонение только по отрицательным
+        # значениям доходности (downside volatility)
+        negative_returns = [r for r in trade_returns if r < 0]
+        if len(negative_returns) > 1:
+            std_dev_negative = stdev(negative_returns)
+        else:
+            std_dev_negative = 0
+
+        if std_dev_negative != 0:
+            sortino_ratio = average_return / std_dev_negative
+        else:
+            # Если нет отрицательных сделок вообще, можно считать Sortino -> бесконечностью,
+            # или поставить 0. Финальный выбор — на усмотрение.
+            sortino_ratio = float('inf') if len(negative_returns) == 0 else 0.0
 
         return {
             'Net Profit': net_profit,
@@ -265,5 +309,7 @@ class TradeSimulator:
             'Percent Profitable': percent_profitable,
             'Profit Factor': profit_factor,
             'Max Drawdown': max_drawdown_percent,
-            'Avg Trade (%)': avg_trade_percent
+            'Avg Trade (%)': avg_trade_percent,
+            'Sharpe Ratio': sharpe_ratio,
+            'Sortino Ratio': sortino_ratio
         }

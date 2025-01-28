@@ -238,6 +238,8 @@ def save_sorted_final_report_to_csv(reports, file_path):
         "Percent Profitable",
         "Total Trades",
         "Profit Factor",
+        "Sharpe Ratio",
+        "Sortino Ratio",
         "Max Drawdown",
         "Avg Trade (%)",
         "params"
@@ -287,6 +289,8 @@ def save_sorted_filtered_final_report_to_csv(reports, file_path):
         "Percent Profitable",
         "Total Trades",
         "Profit Factor",
+        "Sharpe Ratio",
+        "Sortino Ratio",
         "Max Drawdown",
         "Avg Trade (%)",
         "params"

@@ -1,8 +1,11 @@
 #V1. RSI ниже 30 тогда мы покупаем, если выше 70 тогда продаем.
 #Тейк профит для позиции +0.5% движения цены, стоп лосс 5%
+import os
+import time
 import ta
 from tradesimulator import TradeSimulator
-from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import Pool, cpu_count
+from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 
 deposit = 10000
@@ -54,7 +57,7 @@ def test(ohlc, rsi_length, rsi_overbought, rsi_oversold, takeProfit, stopLoss, n
 def run_test(params):
     ohlc, rsi, overbought, oversold, takeProfit, stopLoss = params
     report = test(ohlc[-15000:], rsi, overbought, oversold, takeProfit, stopLoss, '15')
-    print(f'{rsi} {overbought} {oversold} {takeProfit} {stopLoss} {report["Net Profit"]}')
+    #print(f'{rsi} {overbought} {oversold} {takeProfit} {stopLoss} {report["Net Profit"]}')
 
     if report['Net Profit'] < 0:
         return {}
@@ -64,6 +67,18 @@ def run_test(params):
     report['Net Profit 45k'] = report45['Net Profit']
     report['params'] = f'{rsi} {overbought} {oversold} {takeProfit} {stopLoss}'
     return report
+
+def threaded_run(params):
+    """Выполняется в потоке."""
+    try:
+        return run_test(params)
+    except Exception as e:
+        return {"error": str(e), "params": params}
+
+def process_batch(batch):
+    """Обработка партии задач в потоке."""
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        return list(executor.map(threaded_run, batch))
 
 if __name__ == "__main__":
     #coins = ['BTC', 'AVAX', 'ETC', 'ETH', 'SOL', 'LINK']
@@ -92,11 +107,16 @@ if __name__ == "__main__":
 
             report_history = []
 
-            # Использование ProcessPoolExecutor для параллельной обработки
-            with ProcessPoolExecutor() as executor:
-                results = executor.map(run_test, param_combinations)
+            batch_size = 100  # Размер партии
+            param_batches = [param_combinations[i:i + batch_size] for i in
+                             range(0, len(param_combinations), batch_size)]
 
-            # Сбор и вывод результатов
-            report_history.extend(results)
+            with Pool(cpu_count()) as pool:
+                results = pool.map(process_batch, param_batches)
+
+            # Сбор и сохранение результатов
+            for batch_result in results:
+                report_history.extend(batch_result)
+
             ta.save_sorted_final_report_to_csv(report_history, f'res/v1_{coin}_{tf}.csv')
             print(f'test period: {ohlc[0]["timestamp"]} - {ohlc[-1]["timestamp"]}')

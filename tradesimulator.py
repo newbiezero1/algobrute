@@ -304,12 +304,12 @@ class TradeSimulator:
             sortino_ratio = float('inf') if len(negative_returns) == 0 else 0.0
 
         return {
-            'Net Profit': net_profit,
+            'Net Profit': round(net_profit, 0),
             'Total Trades': total_trades,
-            'Percent Profitable': percent_profitable,
-            'Profit Factor': profit_factor,
-            'Max Drawdown': max_drawdown_percent,
-            'Avg Trade (%)': avg_trade_percent,
-            'Sharpe Ratio': sharpe_ratio,
-            'Sortino Ratio': sortino_ratio
+            'Percent Profitable': round(percent_profitable,2),
+            'Profit Factor': round(profit_factor,2),
+            'Max Drawdown': round(max_drawdown_percent,2),
+            'Avg Trade (%)': round(avg_trade_percent,2),
+            'Sharpe Ratio': round(sharpe_ratio,4),
+            'Sortino Ratio': round(sortino_ratio,4)
         }

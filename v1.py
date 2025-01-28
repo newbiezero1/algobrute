@@ -119,4 +119,5 @@ if __name__ == "__main__":
                 report_history.extend(batch_result)
 
             ta.save_sorted_final_report_to_csv(report_history, f'res/v1_{coin}_{tf}.csv')
+            ta.save_sorted_filtered_final_report_to_csv(report_history, f'res/v1_filtered_{coin}_{tf}.csv')
             print(f'test period: {ohlc[0]["timestamp"]} - {ohlc[-1]["timestamp"]}')

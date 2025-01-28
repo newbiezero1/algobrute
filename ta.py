@@ -267,6 +267,61 @@ def save_sorted_final_report_to_csv(reports, file_path):
             # Используем .get для ключей, чтобы не было ошибок, если данных не хватает
             writer.writerow({col: report.get(col, "") for col in column_order})
 
+def save_sorted_filtered_final_report_to_csv(reports, file_path):
+    """
+    Сохраняет список итоговых отчётов в CSV файл, сортируя по убыванию 'Net Profit',
+    и учитывая указанный порядок колонок.
+
+    :param reports: список словарей с итоговыми данными.
+    :param file_path: путь к CSV файлу для сохранения.
+    """
+    if not reports:
+        print("Список отчётов пуст.")
+        return
+
+    # Порядок колонок
+    column_order = [
+        "Net Profit",
+        "Net Profit 30k",
+        "Net Profit 45k",
+        "Percent Profitable",
+        "Total Trades",
+        "Profit Factor",
+        "Max Drawdown",
+        "Avg Trade (%)",
+        "params"
+    ]
+
+    # Фильтруем записи, исключая строки с пустыми ключевыми значениями
+    filtered_reports = [
+        report for report in reports
+        if (
+            isinstance(report.get("Net Profit"), (int, float)) and report.get("Net Profit") > 1000 and
+            isinstance(report.get("Net Profit 30k"), (int, float)) and report.get("Net Profit 30k") > report.get("Net Profit") and
+            isinstance(report.get("Net Profit 45k"), (int, float)) and report.get("Net Profit 45k") > report.get("Net Profit 30k")
+        )
+    ]
+
+
+    if not filtered_reports:
+        print("Нет данных для сохранения.")
+        return
+
+    # Сортируем отчёты по 'Net Profit' в порядке убывания
+    sorted_reports = sorted(filtered_reports, key=lambda x: x.get("Net Profit", 0), reverse=True)
+
+    # Сохраняем в CSV
+    with open(file_path, mode="w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.DictWriter(csv_file, fieldnames=column_order)
+
+        # Записываем заголовки
+        writer.writeheader()
+
+        # Записываем строки в нужном порядке колонок
+        for report in sorted_reports:
+            # Используем .get для ключей, чтобы не было ошибок, если данных не хватает
+            writer.writerow({col: report.get(col, "") for col in column_order})
+
 def calculate_crossover(v_fastEMA, v_slowEMA):
     bullSignal = []
     for i in range(len(v_fastEMA)):

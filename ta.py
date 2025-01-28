@@ -6,6 +6,7 @@ import csv
 
 def flush_indicator_cache():
     ema_cache = {}
+    rsi_cache = {}
 
 ema_cache = {}
 def calculate_ema(ohlc, period, name):
@@ -21,7 +22,11 @@ def calculate_ema(ohlc, period, name):
     ema_cache[cache_key] = res
     return res
 
-def calculate_rsi(ohlc, period):
+rsi_cache = {}
+def calculate_rsi(ohlc, period, name='15'):
+    cache_key = f'{name}_{period}'
+    if cache_key in rsi_cache:
+        return rsi_cache[cache_key]
     prices = []
     for line in ohlc:
         prices.append(line["close"])
@@ -57,6 +62,8 @@ def calculate_rsi(ohlc, period):
             rounded_rsi.append(round(i,2))
         else:
             rounded_rsi.append(0)
+
+    ema_cache[cache_key] = rounded_rsi
     return rounded_rsi
 
 ohlc_cache = {}

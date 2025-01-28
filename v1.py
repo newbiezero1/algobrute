@@ -53,12 +53,12 @@ def test(ohlc, rsi_length, rsi_overbought, rsi_oversold, takeProfit, stopLoss, n
 # Функция для тестирования
 def run_test(params):
     ohlc, rsi, overbought, oversold, takeProfit, stopLoss = params
-    report = test(ohlc[:-15000], rsi, overbought, oversold, takeProfit, stopLoss, '15')
+    report = test(ohlc[-15000:], rsi, overbought, oversold, takeProfit, stopLoss, '15')
     print(f'{rsi} {overbought} {oversold} {takeProfit} {stopLoss} {report["Net Profit"]}')
 
     if report['Net Profit'] < 0:
         return {}
-    report30 = test(ohlc[:-30000], rsi, overbought, oversold, takeProfit, stopLoss, '30')
+    report30 = test(ohlc[-30000:], rsi, overbought, oversold, takeProfit, stopLoss, '30')
     report45 = test(ohlc, rsi, overbought, oversold, takeProfit, stopLoss, '45')
     report['Net Profit 30k'] = report30['Net Profit']
     report['Net Profit 45k'] = report45['Net Profit']

@@ -56,12 +56,12 @@ def threaded_run(params):
 
 def run_test(params):
     ohlc, filter_ema, slow_ema, takeProfit, stopLoss = params
-    report = test(ohlc[:-15000], filter_ema, slow_ema, takeProfit, stopLoss, '15')
+    report = test(ohlc[-15000:], filter_ema, slow_ema, takeProfit, stopLoss, '15')
     with open('log.txt', "w") as file:
         file.write(f'{filter_ema} {slow_ema} {takeProfit} {stopLoss} {report["Net Profit"]}\n')
     if report['Net Profit'] < 0:
         return {}
-    report30 = test(ohlc[:-30000], filter_ema, slow_ema, takeProfit, stopLoss, '30')
+    report30 = test(ohlc[-30000:], filter_ema, slow_ema, takeProfit, stopLoss, '30')
     report45 = test(ohlc, filter_ema, slow_ema, takeProfit, stopLoss, '45')
     report['Net Profit 30k'] = report30['Net Profit']
     report['Net Profit 45k'] = report45['Net Profit']

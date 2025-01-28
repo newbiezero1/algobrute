@@ -55,12 +55,12 @@ def threaded_run(params):
 
 def run_test(params):
     ohlc, rsi_length, overbuy, oversell, takeProfit = params
-    report = test(ohlc[:-15000], rsi_length, overbuy, oversell, takeProfit, '15')
+    report = test(ohlc[-15000:], rsi_length, overbuy, oversell, takeProfit, '15')
     with open('log_v2.txt', "w") as file:
         file.write(f'{rsi_length} {overbuy} {oversell} {takeProfit} {report["Net Profit"]}\n')
     if report['Net Profit'] < 0:
         return {}
-    report30 = test(ohlc[:-30000],rsi_length, overbuy, oversell, takeProfit, '30')
+    report30 = test(ohlc[-30000:],rsi_length, overbuy, oversell, takeProfit, '30')
     report45 = test(ohlc, rsi_length, overbuy, oversell, takeProfit, '45')
     report['Net Profit 30k'] = report30['Net Profit']
     report['Net Profit 45k'] = report45['Net Profit']

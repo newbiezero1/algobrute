@@ -24,8 +24,8 @@ def test(ohlc, ifilterEma, islowEma, takeProfit, stopLoss, name='15'):
         newBar = ohlc[i]
         crossover = ta.calculate_crossover([ohlc[i-2]['close'], ohlc[i-1]['close']], [slowEma[-2], slowEma[-2]])
         crossunder = ta.calculate_crossunder([ohlc[i-2]['close'], ohlc[i-1]['close']], [slowEma[-2], slowEma[-2]])
-        longCondition = crossover[-1] and ohlc[i-1]['close'] > trendEma[i-1]
-        shortCondition = crossunder[-1] and ohlc[i-1]['close'] < trendEma[i-1]
+        longCondition = crossover[-1] and ohlc[i-1]['close'] < trendEma[i-1]
+        shortCondition = crossunder[-1] and ohlc[i-1]['close'] > trendEma[i-1]
 
         if longCondition and simulator.get_current_position()['direction'] != 'long':
             if simulator.get_current_position()['direction'] is not None:
@@ -106,6 +106,6 @@ if __name__ == "__main__":
             for batch_result in results:
                 report_history.extend(batch_result)
 
-            ta.save_sorted_final_report_to_csv(report_history, f'res/v9_{coin}_{tf}.csv')
+            ta.save_sorted_final_report_to_csv(report_history, f'res/v15_{coin}_{tf}.csv')
             end_time = time.time()
             print(f"Тест завершён за {end_time - start_time} секунд")

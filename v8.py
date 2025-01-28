@@ -14,7 +14,7 @@ def test(ohlc, ifilterEma, ifastEma, islowEma, rsi_length, overbuy, oversell, ta
     trendEma = ta.calculate_ema(ohlc, ifilterEma, name)
     fastEma = ta.calculate_ema(ohlc, ifastEma, name)
     slowEma = ta.calculate_ema(ohlc, islowEma, name)
-    rsi = ta.calculate_rsi(ohlc, rsi_length)
+    rsi = ta.calculate_rsi(ohlc, rsi_length, name)
     crossover = ta.calculate_crossover(fastEma, slowEma)
     crossunder = ta.calculate_crossunder(fastEma, slowEma)
 
@@ -81,6 +81,7 @@ if __name__ == "__main__":
     tfs = ['5m']
     for coin in coins:
         for tf in tfs:
+            ta.flush_indicator_cache()
             ohlc = ta.get_ohlc(coin, tf)
             start_time = time.time()
             filter_ema_range = range(200, 250)

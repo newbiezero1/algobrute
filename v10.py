@@ -79,6 +79,7 @@ if __name__ == "__main__":
     tfs = ['15m']
     for coin in coins:
         for tf in tfs:
+            ta.flush_indicator_cache()
             ohlc = ta.get_ohlc(coin, tf)
             start_time = time.time()
             filter_ema_range = range(150, 350)

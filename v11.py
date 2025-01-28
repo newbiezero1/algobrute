@@ -12,7 +12,7 @@ commission = 0.1
 def test(ohlc, ifilterEma, rsi_length, rsi_overbought, rsi_oversold, takeProfit, stopLoss, name='15'):
     simulator = TradeSimulator(initial_balance=deposit, commission=commission)
     trendEma = ta.calculate_ema(ohlc, ifilterEma, name)
-    rsi = ta.calculate_rsi(ohlc, rsi_length)
+    rsi = ta.calculate_rsi(ohlc, rsi_length, name)
 
     for i in range(len(ohlc)):
         if i < 1: continue
@@ -78,6 +78,7 @@ if __name__ == "__main__":
     tfs = ['5m']
     for coin in coins:
         for tf in tfs:
+            ta.flush_indicator_cache()
             ohlc = ta.get_ohlc(coin, tf)
             start_time = time.time()
             filter_ema_range = range(50, 300)

@@ -11,7 +11,7 @@ commission = 0.1
 
 def test(ohlc, rsi_length, overbuy, oversell, takeProfit, name='15'):
     simulator = TradeSimulator(initial_balance=deposit, commission=commission)
-    rsi = ta.calculate_rsi(ohlc, rsi_length)
+    rsi = ta.calculate_rsi(ohlc, rsi_length, name)
 
     for i in range(len(ohlc)):
         if i < 1: continue
@@ -77,6 +77,7 @@ if __name__ == "__main__":
     tfs = ['5m', '15m']
     for coin in coins:
         for tf in tfs:
+            ta.flush_indicator_cache()
             ohlc = ta.get_ohlc(coin, tf)
             start_time = time.time()
             rsi_range = range(14, 28)

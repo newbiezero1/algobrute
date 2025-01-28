@@ -8,10 +8,10 @@ import numpy as np
 deposit = 10000
 commission = 0.1
 
-def test(ohlc, rsi_length, rsi_overbought, rsi_oversold, takeProfit, stopLoss):
+def test(ohlc, rsi_length, rsi_overbought, rsi_oversold, takeProfit, stopLoss, name='15'):
     ohlc_history = []
     simulator = TradeSimulator(initial_balance=deposit, commission=commission)
-    rsi = ta.calculate_rsi(ohlc, rsi_length)
+    rsi = ta.calculate_rsi(ohlc, rsi_length, name)
 
     for i in range(len(ohlc)):
         if i < 1: continue
@@ -53,13 +53,13 @@ def test(ohlc, rsi_length, rsi_overbought, rsi_oversold, takeProfit, stopLoss):
 # Функция для тестирования
 def run_test(params):
     ohlc, rsi, overbought, oversold, takeProfit, stopLoss = params
-    report = test(ohlc[:-15000], rsi, overbought, oversold, takeProfit, stopLoss)
+    report = test(ohlc[:-15000], rsi, overbought, oversold, takeProfit, stopLoss, '15')
     print(f'{rsi} {overbought} {oversold} {takeProfit} {stopLoss} {report["Net Profit"]}')
 
     if report['Net Profit'] < 0:
         return {}
-    report30 = test(ohlc[:-30000], rsi, overbought, oversold, takeProfit, stopLoss)
-    report45 = test(ohlc, rsi, overbought, oversold, takeProfit, stopLoss)
+    report30 = test(ohlc[:-30000], rsi, overbought, oversold, takeProfit, stopLoss, '30')
+    report45 = test(ohlc, rsi, overbought, oversold, takeProfit, stopLoss, '45')
     report['Net Profit 30k'] = report30['Net Profit']
     report['Net Profit 45k'] = report45['Net Profit']
     report['params'] = f'{rsi} {overbought} {oversold} {takeProfit} {stopLoss}'
@@ -72,6 +72,7 @@ if __name__ == "__main__":
     for coin in coins:
         for tf in tfs:
             # Параметры для перебора
+            ta.flush_indicator_cache()
             ohlc = ta.get_ohlc(coin, tf)
             rsi_range = range(14, 15)
             overbought_range = range(70, 91)

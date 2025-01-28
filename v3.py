@@ -9,7 +9,7 @@ commission = 0.1
 def test(ohlc,ema, rsi_length,takeProfit, stopLoss, name='15'):
     ohlc_history = []
     simulator = TradeSimulator(initial_balance=deposit, commission=commission)
-    rsi = ta.calculate_rsi(ohlc, rsi_length)
+    rsi = ta.calculate_rsi(ohlc, rsi_length, name)
     ema = ta.calculate_ema(ohlc, ema, name)
     for i in range(len(ohlc)):
         if i < 1: continue

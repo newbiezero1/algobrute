@@ -24,11 +24,11 @@ def test(ohlc, ifilterEma, islowEma, filterEmaKoridor, takeProfit, stopLoss, nam
             continue
 
         newBar = ohlc[i]
-        filterEMAKoridorPlus = trendEma[-2] + (trendEma[-2] / 100 * filterEmaKoridor)
-        filterEMAKoridorMinus = trendEma[-2] - (trendEma[-2] / 100 * filterEmaKoridor)
+        filterEMAKoridorPlus = trendEma[i-1] + (trendEma[i-1] / 100 * filterEmaKoridor)
+        filterEMAKoridorMinus = trendEma[i-1] - (trendEma[i-1] / 100 * filterEmaKoridor)
 
-        longCondition = crossover[-2] and not (closedBar['close'] < filterEMAKoridorPlus and closedBar['close'] > filterEMAKoridorMinus)
-        shortCondition = crossunder[-2]  and not (closedBar['close'] < filterEMAKoridorPlus and closedBar['close'] > filterEMAKoridorMinus)
+        longCondition = crossover[i-1] and not (closedBar['close'] < filterEMAKoridorPlus and closedBar['close'] > filterEMAKoridorMinus)
+        shortCondition = crossunder[i-1]  and not (closedBar['close'] < filterEMAKoridorPlus and closedBar['close'] > filterEMAKoridorMinus)
 
         if longCondition and simulator.get_current_position()['direction'] != 'long':
             if simulator.get_current_position()['direction'] is not None:

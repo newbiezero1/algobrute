@@ -84,14 +84,15 @@ def process_batch(batch):
         return list(executor.map(threaded_run, batch))
 
 if __name__ == "__main__":
-    #coins = ['BTC', 'AVAX', 'ETC', 'ETH', 'SOL', 'LINK']
-    coins = ['ADA']
-    tfs = ['5m']
+    coins = ['BTC', 'AVAX', 'ETC', 'ETH', 'SOL', 'LINK']
+    #coins = ['ADA']
+    tfs = ['5m', '15m']
     for coin in coins:
         for tf in tfs:
             ta.flush_indicator_cache()
             # Параметры для перебора
             ohlc = ta.get_ohlc(coin, tf)
+            start_time = time.time()
             rsi_range = range(14, 28)
             overbought_range = range(70, 91)
             oversold_range = range(10, 31)
@@ -119,3 +120,5 @@ if __name__ == "__main__":
             ta.save_sorted_final_report_to_csv(report_history, f'res/v2_{coin}_{tf}.csv')
             ta.save_sorted_filtered_final_report_to_csv(report_history, f'res/v2_filtered_{coin}_{tf}.csv')
             print(f'test period: {ohlc[0]["timestamp"]} - {ohlc[-1]["timestamp"]}')
+            end_time = time.time()
+            print(f"Тест завершён за {end_time - start_time} секунд")

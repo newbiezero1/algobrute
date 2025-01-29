@@ -9,22 +9,24 @@ import numpy as np
 deposit = 10000
 commission = 0.1
 
-def test(ohlc, ifilterEma, takeProfit, stopLoss, name='15'):
+def test(ohlc, ifilterEma, islowEma, takeProfit, stopLoss, name='15'):
     simulator = TradeSimulator(initial_balance=deposit, commission=commission)
     trendEma = ta.calculate_ema(ohlc, ifilterEma, name)
+    slowEma = ta.calculate_ema(ohlc, islowEma, name)
+    crossover = ta.calculate_crossover(slowEma, trendEma)
+    crossunder = ta.calculate_crossunder(slowEma, trendEma)
 
     for i in range(len(ohlc)):
         if i < 1: continue
         closedBar = ohlc[i-1]
         simulator.on_new_candle(index=closedBar['timestamp'], o=closedBar['open'], h=closedBar['high'], l=closedBar['low'], c=closedBar['close'])
-        if i < max([ifilterEma, ifilterEma]):
+        if i < max([ifilterEma, islowEma]):
             continue
 
         newBar = ohlc[i]
-        crossover = ta.calculate_crossover([ohlc[i-2]['close'], ohlc[i-1]['close']], [trendEma[-2], trendEma[-2]])
-        crossunder = ta.calculate_crossunder([ohlc[i-2]['close'], ohlc[i-1]['close']], [trendEma[-2], trendEma[-2]])
-        longCondition = crossover[-1]
-        shortCondition = crossunder[-1]
+
+        longCondition = crossover[i-1]
+        shortCondition = crossunder[i-1]
 
         if longCondition and simulator.get_current_position()['direction'] != 'long':
             if simulator.get_current_position()['direction'] is not None:
@@ -54,17 +56,17 @@ def threaded_run(params):
         return {"error": str(e), "params": params}
 
 def run_test(params):
-    ohlc, filter_ema, takeProfit, stopLoss = params
-    report = test(ohlc[-15000:], filter_ema, takeProfit, stopLoss, '15')
+    ohlc, filter_ema, slow_ema, takeProfit, stopLoss = params
+    report = test(ohlc[-15000:], filter_ema, slow_ema, takeProfit, stopLoss, '15')
     with open('log.txt', "w") as file:
-        file.write(f'{filter_ema}  {takeProfit} {stopLoss} {report["Net Profit"]}\n')
+        file.write(f'{filter_ema} {slow_ema} {takeProfit} {stopLoss} {report["Net Profit"]}\n')
     if report['Net Profit'] < 0:
         return {}
-    report30 = test(ohlc[-30000:], filter_ema, takeProfit, stopLoss, '30')
-    report45 = test(ohlc, filter_ema, takeProfit, stopLoss, '45')
+    report30 = test(ohlc[-30000:], filter_ema, slow_ema, takeProfit, stopLoss, '30')
+    report45 = test(ohlc, filter_ema, slow_ema, takeProfit, stopLoss, '45')
     report['Net Profit 30k'] = report30['Net Profit']
     report['Net Profit 45k'] = report45['Net Profit']
-    report['params'] = f'{filter_ema} {takeProfit} {stopLoss}'
+    report['params'] = f'{filter_ema} {slow_ema} {takeProfit} {stopLoss}'
     return report
 
 def process_batch(batch):
@@ -74,19 +76,21 @@ def process_batch(batch):
 
 if __name__ == "__main__":
     coins = ['BTC']
-    tfs = ['5m']
+    tfs = ['15m']
     for coin in coins:
         for tf in tfs:
             ta.flush_indicator_cache()
             ohlc = ta.get_ohlc(coin, tf)
             start_time = time.time()
-            filter_ema_range = range(50, 300)
-            takeProfit_range = np.arange(1.0, 11.0, 0.5)
-            stopLoss_range = np.arange(1.0, 11.0, 0.5)
+            filter_ema_range = range(150, 350)
+            slow_ema_range = range(50, 150)
+            takeProfit_range = np.arange(1.0, 16.0, 0.5)
+            stopLoss_range = np.arange(1.0, 16.0, 0.5)
 
             param_combinations = [
-                (ohlc, filter_ema, takeProfit, stopLoss)
+                (ohlc, filter_ema, slow_ema, takeProfit, stopLoss)
                 for filter_ema in filter_ema_range
+                for slow_ema in slow_ema_range
                 for takeProfit in takeProfit_range
                 for stopLoss in stopLoss_range
             ]

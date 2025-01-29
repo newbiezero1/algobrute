@@ -112,7 +112,7 @@ if __name__ == "__main__":
             for batch_result in results:
                 report_history.extend(batch_result)
 
-            ta.save_sorted_final_report_to_csv(report_history, f'res/v16_{coin}_{tf}.csv')
-            ta.save_sorted_filtered_final_report_to_csv(report_history, f'res/v16_filtered_{coin}_{tf}.csv')
+            ta.save_sorted_final_report_to_csv(report_history, f'res/v12_{coin}_{tf}.csv')
+            ta.save_sorted_filtered_final_report_to_csv(report_history, f'res/v12_filtered_{coin}_{tf}.csv')
             end_time = time.time()
             print(f"Тест завершён за {end_time - start_time} секунд")

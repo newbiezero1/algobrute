@@ -9,23 +9,23 @@ import numpy as np
 deposit = 10000
 commission = 0.1
 
-def test(ohlc, ifilterEma, rsi_length, rsi_overbought, rsi_oversold, takeProfit, stopLoss, name='15'):
+def test(ohlc, ifilterEma, islowEma, takeProfit, stopLoss, name='15'):
     simulator = TradeSimulator(initial_balance=deposit, commission=commission)
     trendEma = ta.calculate_ema(ohlc, ifilterEma, name)
-    rsi = ta.calculate_rsi(ohlc, rsi_length, name)
+    slowEma = ta.calculate_ema(ohlc, islowEma, name)
 
     for i in range(len(ohlc)):
         if i < 1: continue
         closedBar = ohlc[i-1]
         simulator.on_new_candle(index=closedBar['timestamp'], o=closedBar['open'], h=closedBar['high'], l=closedBar['low'], c=closedBar['close'])
-        if i < max([ifilterEma, ifilterEma]):
+        if i < max([ifilterEma, islowEma]):
             continue
 
         newBar = ohlc[i]
-        crossover = ta.calculate_crossover([ohlc[i-2]['close'], ohlc[i-1]['close']], [trendEma[-2], trendEma[-2]])
-        crossunder = ta.calculate_crossunder([ohlc[i-2]['close'], ohlc[i-1]['close']], [trendEma[-2], trendEma[-2]])
-        longCondition = crossover[-1] and rsi[i-1] < rsi_overbought
-        shortCondition = crossunder[-1] and rsi[i-1] > rsi_oversold
+        crossover = ta.calculate_crossover([ohlc[i-2]['close'], ohlc[i-1]['close']], [slowEma[-2], slowEma[-2]])
+        crossunder = ta.calculate_crossunder([ohlc[i-2]['close'], ohlc[i-1]['close']], [slowEma[-2], slowEma[-2]])
+        longCondition = crossover[-1] and ohlc[i-1]['close'] < trendEma[i-1]
+        shortCondition = crossunder[-1] and ohlc[i-1]['close'] > trendEma[i-1]
 
         if longCondition and simulator.get_current_position()['direction'] != 'long':
             if simulator.get_current_position()['direction'] is not None:
@@ -55,17 +55,17 @@ def threaded_run(params):
         return {"error": str(e), "params": params}
 
 def run_test(params):
-    ohlc, filter_ema, rsi_length, rsi_overbought, rsi_oversold, takeProfit, stopLoss = params
-    report = test(ohlc[-15000:], filter_ema, rsi_length, rsi_overbought, rsi_oversold, takeProfit, stopLoss, '15')
+    ohlc, filter_ema, slow_ema, takeProfit, stopLoss = params
+    report = test(ohlc[-15000:], filter_ema, slow_ema, takeProfit, stopLoss, '15')
     with open('log.txt', "w") as file:
-        file.write(f'{filter_ema} {rsi_length} {rsi_overbought} {rsi_oversold} {takeProfit} {stopLoss} {report["Net Profit"]}\n')
+        file.write(f'{filter_ema} {slow_ema} {takeProfit} {stopLoss} {report["Net Profit"]}\n')
     if report['Net Profit'] < 0:
         return {}
-    report30 = test(ohlc[-30000:], filter_ema, rsi_length, rsi_overbought, rsi_oversold, takeProfit, stopLoss, '30')
-    report45 = test(ohlc, filter_ema, rsi_length, rsi_overbought, rsi_oversold, takeProfit, stopLoss, '45')
+    report30 = test(ohlc[-30000:], filter_ema, slow_ema, takeProfit, stopLoss, '30')
+    report45 = test(ohlc, filter_ema, slow_ema, takeProfit, stopLoss, '45')
     report['Net Profit 30k'] = report30['Net Profit']
     report['Net Profit 45k'] = report45['Net Profit']
-    report['params'] = f'{filter_ema} {rsi_length} {rsi_overbought} {rsi_oversold} {takeProfit} {stopLoss}'
+    report['params'] = f'{filter_ema} {slow_ema} {takeProfit} {stopLoss}'
     return report
 
 def process_batch(batch):
@@ -82,18 +82,14 @@ if __name__ == "__main__":
             ohlc = ta.get_ohlc(coin, tf)
             start_time = time.time()
             filter_ema_range = range(50, 300)
-            rsi_range = range(14, 15)
-            overbought_range = range(70, 91)
-            oversold_range = range(10, 31)
+            slow_ema_range = range(20, 45)
             takeProfit_range = np.arange(1.0, 11.0, 0.5)
             stopLoss_range = np.arange(1.0, 11.0, 0.5)
 
             param_combinations = [
-                (ohlc, filter_ema,rsi, overbought, oversold, takeProfit, stopLoss)
+                (ohlc, filter_ema,slow_ema, takeProfit, stopLoss)
                 for filter_ema in filter_ema_range
-                for rsi in rsi_range
-                for overbought in overbought_range
-                for oversold in oversold_range
+                for slow_ema in slow_ema_range
                 for takeProfit in takeProfit_range
                 for stopLoss in stopLoss_range
             ]

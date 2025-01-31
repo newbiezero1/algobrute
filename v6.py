@@ -96,17 +96,17 @@ def process_batch(batch):
         return list(executor.map(threaded_run, batch))
 
 if __name__ == "__main__":
-    coins = ['BTC']
-    tfs = ['5m']
+    coins = ['BTC', 'AVAX', 'ETC', 'ETH', 'SOL', 'LINK']
+    tfs = ['5m', '15m']
     for coin in coins:
         for tf in tfs:
             ta.flush_indicator_cache()
             cache = Manager().dict()
             ohlc = ta.get_ohlc(coin, tf)
             start_time = time.time()
-            filter_ema_range = range(150, 260)
-            fast_ema_range = range(5, 25)
-            slow_ema_range = range(20, 50)
+            filter_ema_range = range(150, 260,5)
+            fast_ema_range = range(5, 25,4)
+            slow_ema_range = range(20, 50,5)
             takeProfit_range = np.arange(1.0, 11.0, 0.5)
             stopLoss_range = np.arange(1.0, 11.0, 0.5)
 
@@ -131,8 +131,8 @@ if __name__ == "__main__":
             # Сбор и сохранение результатов
             for batch_result in results:
                 report_history.extend(batch_result)
+            end_time = time.time()
+            print(f"Тест завершён за {end_time - start_time} секунд")
 
             ta.save_sorted_final_report_to_csv(report_history, f'res/v6_{coin}_{tf}.csv')
             ta.save_sorted_filtered_final_report_to_csv(report_history, f'res/v6_filtered_{coin}_{tf}.csv')
-            end_time = time.time()
-            print(f"Тест завершён за {end_time - start_time} секунд")

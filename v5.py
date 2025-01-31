@@ -78,7 +78,7 @@ def process_batch(batch):
         return list(executor.map(threaded_run, batch))
 
 if __name__ == "__main__":
-    coins = ['AVAX', 'ETC', 'ETH', 'SOL', 'LINK']
+    coins = ['BTC', 'AVAX', 'ETC', 'ETH', 'SOL', 'LINK']
     tfs = ['5m', '15m']
     for coin in coins:
         for tf in tfs:
@@ -87,8 +87,8 @@ if __name__ == "__main__":
             ohlc = ta.get_ohlc(coin, tf)
             start_time = time.time()
             rsi_range = range(14, 28, 2)
-            overbought_range = range(70, 91)
-            oversold_range = range(10, 31)
+            overbought_range = range(70, 91,2)
+            oversold_range = range(10, 31,2)
             takeProfit_range = np.arange(1.0, 16.0, 0.5)
 
             param_combinations = [

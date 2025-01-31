@@ -32,7 +32,12 @@ def test(cache, ohlc, ifilterEma, ifastEma, islowEma, rsi_length, overbuy, overs
         fastEma = ta.calculate_ema(ohlc, ifastEma, name)
         cache[fastEma_cache_key] = fastEma
 
-    rsi = ta.calculate_rsi(ohlc, rsi_length, name)
+    rsi_cache_key = f'rsi_{name}_{rsi_length}'
+    if rsi_cache_key in cache:
+        rsi = cache[rsi_cache_key]
+    else:
+        rsi = ta.calculate_rsi(ohlc, rsi_length, name)
+        cache[rsi_cache_key] = rsi
     crossover = ta.calculate_crossover(fastEma, slowEma)
     crossunder = ta.calculate_crossunder(fastEma, slowEma)
 
@@ -96,19 +101,19 @@ def process_batch(batch):
 
 if __name__ == "__main__":
     coins = ['BTC']
-    tfs = ['5m']
+    tfs = ['5m', '15m']
     for coin in coins:
         for tf in tfs:
             ta.flush_indicator_cache()
             cache = Manager().dict()
             ohlc = ta.get_ohlc(coin, tf)
             start_time = time.time()
-            filter_ema_range = range(200, 250)
-            fast_ema_range = range(10, 25)
-            slow_ema_range = range(20, 40)
-            rsi_range = range(14, 20)
-            overbought_range = range(70, 80)
-            oversold_range = range(20, 31)
+            filter_ema_range = range(200, 250, 5)
+            fast_ema_range = range(10, 40, 5)
+            slow_ema_range = range(20, 80, 5)
+            rsi_range = range(14, 24,2)
+            overbought_range = range(70, 81,2)
+            oversold_range = range(20, 31,2)
             takeProfit_range = np.arange(1.0, 11.0, 1.0)
             stopLoss_range = np.arange(1.0, 11.0, 1.0)
 

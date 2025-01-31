@@ -2,18 +2,30 @@ import os
 import time
 import ta
 from tradesimulator import TradeSimulator
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool, cpu_count, Manager
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 
 deposit = 10000
 commission = 0.1
 
-def test(ohlc,ema, rsi_length,takeProfit, stopLoss, name='15'):
+def test(cache, ohlc,ema_length, rsi_length,takeProfit, stopLoss, name='15'):
     ohlc_history = []
     simulator = TradeSimulator(initial_balance=deposit, commission=commission)
-    rsi = ta.calculate_rsi(ohlc, rsi_length, name)
-    ema = ta.calculate_ema(ohlc, ema, name)
+    rsi_cache_key = f'rsi_{name}_{rsi_length}'
+    if rsi_cache_key in cache:
+        rsi = cache[rsi_cache_key]
+    else:
+        rsi = ta.calculate_rsi(ohlc, rsi_length, name)
+        cache[rsi_cache_key] = rsi
+
+    ema_cache_key = f'trendEma_{name}_{ema_length}'
+    if ema_cache_key in cache:
+        ema = cache[ema_cache_key]
+    else:
+        ema = ta.calculate_ema(ohlc, ema_length, name)
+        cache[ema_cache_key] = ema
+
     for i in range(len(ohlc)):
         if i < 1: continue
         closedBar = ohlc[i - 1]
@@ -46,14 +58,14 @@ def test(ohlc,ema, rsi_length,takeProfit, stopLoss, name='15'):
 #ohlc = ta.get_ohlc("BTC", "15m")
 # Функция для тестирования
 def run_test(params):
-    ohlc, ema, rsi, takeProfit, stopLoss = params
-    report = test(ohlc[-15000:], ema, rsi, takeProfit, stopLoss, '15')
+    cache, ohlc, ema, rsi, takeProfit, stopLoss = params
+    report = test(cache, ohlc[-15000:], ema, rsi, takeProfit, stopLoss, '15')
     with open('log_v2.txt', "w") as file:
         file.write(f'{ema} {rsi} {takeProfit} {stopLoss} {report["Net Profit"]}\n')
     if report['Net Profit'] < 0:
         return {}
-    report30 = test(ohlc[-30000:], ema, rsi, takeProfit, stopLoss, '30')
-    report45 = test(ohlc, ema, rsi, takeProfit, stopLoss, '45')
+    report30 = test(cache, ohlc[-30000:], ema, rsi, takeProfit, stopLoss, '30')
+    report45 = test(cache, ohlc, ema, rsi, takeProfit, stopLoss, '45')
     report['Net Profit 30k'] = report30['Net Profit']
     report['Net Profit 45k'] = report45['Net Profit']
     report['params'] = f'{ema} {rsi} {takeProfit} {stopLoss}'
@@ -78,6 +90,7 @@ if __name__ == "__main__":
     for coin in coins:
         for tf in tfs:
             ta.flush_indicator_cache()
+            cache = Manager().dict()
             # Параметры для перебора
             ohlc = ta.get_ohlc(coin, tf)
             rsi_range = range(14, 15)
@@ -87,7 +100,7 @@ if __name__ == "__main__":
 
             # Генерация всех комбинаций параметров
             param_combinations = [
-                (ohlc, ema, rsi, takeProfit, stopLoss)
+                (cache, ohlc, ema, rsi, takeProfit, stopLoss)
                 for ema in ema_range
                 for rsi in rsi_range
                 for takeProfit in takeProfit_range

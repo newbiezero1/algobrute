@@ -115,7 +115,6 @@ if __name__ == "__main__":
 
             with Pool(cpu_count()) as pool:
                 results = pool.map(process_batch, param_batches)
-
             # Сбор и сохранение результатов
             for batch_result in results:
                 report_history.extend(batch_result)

@@ -2,16 +2,21 @@ import os
 import time
 import ta
 from tradesimulator import TradeSimulator
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool, cpu_count, Manager
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 
 deposit = 10000
 commission = 0.1
 
-def test(ohlc, rsi_length, overbuy, oversell, takeProfit, name='15'):
+def test(cache, ohlc, rsi_length, overbuy, oversell, takeProfit, name='15'):
     simulator = TradeSimulator(initial_balance=deposit, commission=commission)
-    rsi = ta.calculate_rsi(ohlc, rsi_length, name)
+    rsi_cache_key = f'rsi_{name}_{rsi_length}'
+    if rsi_cache_key in cache:
+        rsi = cache[rsi_cache_key]
+    else:
+        rsi = ta.calculate_rsi(ohlc, rsi_length, name)
+        cache[rsi_cache_key] = rsi
 
     for i in range(len(ohlc)):
         if i < 1: continue
@@ -54,14 +59,14 @@ def threaded_run(params):
         return {"error": str(e), "params": params}
 
 def run_test(params):
-    ohlc, rsi_length, overbuy, oversell, takeProfit = params
-    report = test(ohlc[-15000:], rsi_length, overbuy, oversell, takeProfit, '15')
+    cache, ohlc, rsi_length, overbuy, oversell, takeProfit = params
+    report = test(cache, ohlc[-15000:], rsi_length, overbuy, oversell, takeProfit, '15')
     with open('log_v2.txt', "w") as file:
         file.write(f'{rsi_length} {overbuy} {oversell} {takeProfit} {report["Net Profit"]}\n')
     if report['Net Profit'] < 0:
         return {}
-    report30 = test(ohlc[-30000:],rsi_length, overbuy, oversell, takeProfit, '30')
-    report45 = test(ohlc, rsi_length, overbuy, oversell, takeProfit, '45')
+    report30 = test(cache, ohlc[-30000:],rsi_length, overbuy, oversell, takeProfit, '30')
+    report45 = test(cache, ohlc, rsi_length, overbuy, oversell, takeProfit, '45')
     report['Net Profit 30k'] = report30['Net Profit']
     report['Net Profit 45k'] = report45['Net Profit']
     report['params'] = f'{rsi_length} {overbuy} {oversell} {takeProfit}'
@@ -78,15 +83,16 @@ if __name__ == "__main__":
     for coin in coins:
         for tf in tfs:
             ta.flush_indicator_cache()
+            cache = Manager().dict()
             ohlc = ta.get_ohlc(coin, tf)
             start_time = time.time()
-            rsi_range = range(14, 28)
+            rsi_range = range(14, 28, 2)
             overbought_range = range(70, 91)
             oversold_range = range(10, 31)
             takeProfit_range = np.arange(1.0, 16.0, 0.5)
 
             param_combinations = [
-                (ohlc, rsi, overbought, oversold, takeProfit)
+                (cache, ohlc, rsi, overbought, oversold, takeProfit)
                 for rsi in rsi_range
                 for overbought in overbought_range
                 for oversold in oversold_range

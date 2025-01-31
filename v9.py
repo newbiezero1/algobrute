@@ -18,7 +18,7 @@ def test(cache, ohlc, ifilterEma, islowEma, takeProfit, stopLoss, name='15'):
         trendEma = ta.calculate_ema(ohlc, ifilterEma, name)
         cache[trendEma_cache_key] = trendEma
 
-    slowEma_cache_key = f'slowEma_{name}_{ifilterEma}'
+    slowEma_cache_key = f'slowEma_{name}_{islowEma}'
     if slowEma_cache_key in cache:
         slowEma = cache[slowEma_cache_key]
     else:
